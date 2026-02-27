@@ -1,7 +1,7 @@
 const express = require('express');
 const pool = require("../db/db-manager");
+const bcrypt = require("bcrypt");
 const router = express.Router();
-
 
 router.get('/', function (req, res, next) {
     res.send('respond with a resource');
@@ -28,10 +28,20 @@ router.post('/login', async function (req, res, next) {
         select *
         from users1
         where username = $1
-          and password = $2
-    `, [username, password])
+    `, [username])
 
-    res.json(result.rows)
+    const user = result?.rows[0]
+    if (!user) {
+        res.status(401).send({message: "Invalid username or password"})
+    }
+
+    let isPasswordMatched = bcrypt.compareSync(password, user?.password)
+
+    if (isPasswordMatched) {
+        res.json(user)
+    } else {
+        res.status(401).send({message: "Invalid username or password"})
+    }
 })
 
 router.post('/register', async function (req, res, next) {
@@ -39,16 +49,28 @@ router.post('/register', async function (req, res, next) {
     let password = req.body.password
     let passwordSecond = req.body.passwordSecond
 
+    pool.query(`
+        select *
+        from users1
+        where username = $1
+    `, [username]).then(async result => {
+        if (await result.rows[0]) {
+            res.status(400).send("User already exists");
+        }
+    })
+
     if (password != passwordSecond) {
         res.status(400).send("password not match");
     }
 
+    let hashedPassword = bcrypt.hashSync(password, 10);
+
     const result = await pool.query(`
         insert into users1 (username, password)
         values ($1, $2)
-    `, [username, password])
+    `, [username, hashedPassword])
 
-    res.json(result.rows)
+    res.json(await result.rows)
 })
 
 
