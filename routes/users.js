@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require("../db/db-manager");
 const bcrypt = require("bcrypt");
+const userService = require("../services/userService");
 const router = express.Router();
 
 router.get('/', function (req, res, next) {
@@ -49,29 +50,13 @@ router.post('/register', async function (req, res, next) {
     let password = req.body.password
     let passwordSecond = req.body.passwordSecond
 
-    pool.query(`
-        select *
-        from users1
-        where username = $1
-    `, [username]).then(async result => {
-        if (await result.rows[0]) {
-            res.status(400).send("User already exists");
-        }
-    })
-
     if (password != passwordSecond) {
         res.status(400).send("password not match");
     }
 
-    let hashedPassword = bcrypt.hashSync(password, 10);
-
-    const result = await pool.query(`
-        insert into users1 (username, password)
-        values ($1, $2)
-    `, [username, hashedPassword])
-
-    res.json(await result.rows)
+    userService.create({username, password})
+        .then(result => res.json(result))
+        .catch(err => res.status(400).send(err.message));
 })
-
 
 module.exports = router;
