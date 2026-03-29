@@ -1,1 +1,229 @@
-VITYA SHOS`
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Mix</title>
+
+    <style>
+        :root {
+            --bg: #0e1621;
+            --sidebar: #17212b;
+            --card: #1f2c3a;
+            --text: white;
+        }
+
+        .light {
+            --bg: #f4f4f4;
+            --sidebar: #ffffff;
+            --card: #e3e3e3;
+            --text: black;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI";
+            display: flex;
+            height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            transition: 0.3s;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: var(--sidebar);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .chat-item {
+            padding: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .message {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 10px;
+            animation: fadeIn 0.3s;
+        }
+
+        .me { background: #2b5278; color:white; margin-left:auto; }
+        .other { background: var(--card); }
+
+        .input-area {
+            display: flex;
+            padding: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 10px;
+        }
+
+        button {
+            margin-left: 5px;
+            cursor: pointer;
+        }
+
+        @keyframes fadeIn {
+            from {opacity:0; transform:translateY(10px);}
+            to {opacity:1;}
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-header">
+        Mix
+        <div>
+            <button onclick="toggleTheme()">🌙</button>
+            <button onclick="createChat()">＋</button>
+        </div>
+    </div>
+
+    <div class="chat-list" id="chatList"></div>
+</div>
+
+<div class="chat">
+    <div class="messages" id="messages"></div>
+
+    <div class="input-area">
+        <input id="input">
+        <button onclick="sendMessage()">➤</button>
+    </div>
+</div>
+
+<script>
+    let chats = JSON.parse(localStorage.getItem("chats")) || [];
+    let currentChat = null;
+    let theme = localStorage.getItem("theme") || "dark";
+
+    if (theme === "light") document.body.classList.add("light");
+
+    function save() {
+        localStorage.setItem("chats", JSON.stringify(chats));
+    }
+
+    function renderChats() {
+        const list = document.getElementById("chatList");
+        list.innerHTML = "";
+
+        chats.forEach((chat, index) => {
+            const div = document.createElement("div");
+            div.className = "chat-item";
+            div.innerHTML = `
+            ${chat.name}
+            <button onclick="deleteChat(${index});event.stopPropagation()">❌</button>
+        `;
+
+            div.onclick = () => openChat(index);
+            list.appendChild(div);
+        });
+    }
+
+    function createChat() {
+        const name = prompt("Назва чату:");
+        if (!name) return;
+
+        chats.push({ name, messages: [] });
+        save();
+        renderChats();
+    }
+
+    function deleteChat(index) {
+        chats.splice(index, 1);
+        save();
+        renderChats();
+        document.getElementById("messages").innerHTML = "";
+    }
+
+    function openChat(index) {
+        currentChat = index;
+        const messages = document.getElementById("messages");
+        messages.innerHTML = "";
+
+        chats[index].messages.forEach(m => {
+            const div = document.createElement("div");
+            div.className = "message " + m.type;
+            div.textContent = m.text;
+            messages.appendChild(div);
+        });
+    }
+
+    function sendMessage() {
+        const input = document.getElementById("input");
+        if (!input.value || currentChat === null) return;
+
+        const msg = { text: input.value, type: "me" };
+        chats[currentChat].messages.push(msg);
+
+        const div = document.createElement("div");
+        div.className = "message me";
+        div.textContent = input.value;
+
+        document.getElementById("messages").appendChild(div);
+
+        input.value = "";
+        save();
+
+        setTimeout(() => {
+            const reply = { text: "Ок 👍", type: "other" };
+            chats[currentChat].messages.push(reply);
+
+            const div2 = document.createElement("div");
+            div2.className = "message other";
+            div2.textContent = reply.text;
+
+            document.getElementById("messages").appendChild(div2);
+            save();
+        }, 500);
+    }
+
+    function toggleTheme() {
+        document.body.classList.toggle("light");
+        localStorage.setItem("theme", document.body.classList.contains("light") ? "light" : "dark");
+    }
+
+    renderChats();
+
+    document.getElementById("input").addEventListener("keypress", e => {
+        if (e.key === "Enter") sendMessage();
+    });
+</script>
+
+</body>
+</html>
