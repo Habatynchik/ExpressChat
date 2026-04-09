@@ -7,6 +7,7 @@ const logger = require('morgan');
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const chatRouter = require('./routes/chat');
+const messagesRouter = require('./routes/messages');
 const session = require("express-session");
 
 const app = express();
@@ -35,6 +36,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter); // localhost:3000/
 app.use('/users', usersRouter); // localhost:3000/users
 app.use('/chat', chatRouter); // localhost:3000/chat
+app.use('/messages', messagesRouter); // localhost:3000/messages
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
